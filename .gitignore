@@ -10,6 +10,10 @@
 .Ruserdata
 .DS_Store
 
+# Large datasets
+input/
+output/
+
 # Example code in package build process
 *-Ex.R
 
