@@ -4,10 +4,11 @@
 # Shows how age bias, sex bias, tissue bias, genetic variation, and aging error 
 # can affect clock performance
 
+# 1 - Prep workspace ====
+
+# Load libraries
 library(tidyverse)
 library(cowplot)
-
-# 1 - Prep workspace ====
 
 # Load clock function
 source('functions/fitClock.R')
