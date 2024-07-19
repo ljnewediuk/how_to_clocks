@@ -45,6 +45,7 @@ meth_list[['meth_dat_norm']] <- meth_dat
 # 4 - Fit clocks for each case (using methylation dfs in list) ====
 
 plot_list <- list()
+accuracy_list <- list()
 for(i in 1:length(meth_list)) {
   
   # Check which bears have repeat samples
@@ -72,12 +73,19 @@ for(i in 1:length(meth_list)) {
   
   # Add plots to list
   plot_list[[names(meth_list)[[i]]]] <- fs_clock$plot
+  accuracy_list[[names(meth_list)[[i]]]]$mae <- fs_clock$mae
+  accuracy_list[[names(meth_list)[[i]]]]$rsq <- fs_clock$rsq
   
 }
 
+# Re-order the plot list so the normal model is first
+reorder_plot_list <- list(plot_list$meth_dat_norm, plot_list$meth_ewas_all,
+                          plot_list$meth_ewas_pop, plot_list$meth_ewas_sex,
+                          plot_list$meth_ewas_tis, plot_list$meth_dat_align)
+
 # 5 - Plot ====
 
-plot_grid(plotlist = plot_list, ncol = 3, labels = LETTERS[1:6], label_size = 20)
+plot_grid(plotlist = reorder_plot_list, ncol = 3, labels = LETTERS[1:6], label_size = 20)
 
 # 6 - Save ====
 
