@@ -8,7 +8,7 @@ fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
     # Make chip positions rownames
     column_to_rownames('chip.ID.loc') %>%
     # Remove extra cols
-    select(! sampleId:Population) %>%
+    select(starts_with('cg')) %>%
     # Convert to matrix
     as.matrix()
   
@@ -17,7 +17,7 @@ fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
     # Make chip positions rownames
     column_to_rownames('chip.ID.loc') %>%
     # Remove extra cols
-    select(! sampleId:Population) %>%
+    select(starts_with('cg')) %>%
     # Convert to matrix
     as.matrix()
   
@@ -25,7 +25,7 @@ fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
   
   # Add ages for training and testing
   age_df <- test_df %>%
-    select(sampleId:Population)
+    select(! starts_with('cg'))
   
   # Get ages for training data
   train_ages <- as.numeric(train_df$age)
@@ -53,10 +53,6 @@ fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
   # Plot
   plt <- ggplot(age_df, aes(x = age, y = agePredict)) + 
     geom_abline(intercept = 0, slope = 1, linetype = 'dashed', linewidth = 1) +
-    annotate(label = paste0('MAE == ', round(mae, 1)), size = 4,
-             y = 0.5, x = 23, geom = 'text', parse = T) +
-    annotate(label = paste0('R^2 == ', round(rsq, 1)), size = 4,
-             y = 4, x = 24.2, geom = 'text', parse = T) +
     theme(panel.background = element_rect(fill = 'white', 
                                           colour = 'black',
                                           linewidth = 1),
