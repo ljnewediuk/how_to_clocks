@@ -26,24 +26,7 @@ source('functions/fitLimma.R')
 # Normalized betas and sample info
 meth_dat <- readRDS('input/norm_betas.rds') 
 
-# 3 - Subset data by tissue, population, and sex ====
-
-# Split by population
-split_pop <- meth_dat %>%
-  group_by(Population) %>%
-  group_split()
-
-# Split by tissue
-split_spec <- meth_dat %>%
-  group_by(Spec) %>%
-  group_split()
-
-# Split by sex
-split_sex <- meth_dat %>%
-  group_by(sex) %>%
-  group_split()
-
-# 4 - Run EWAS ====
+# 3 - Run EWAS ====
 
 # Fit lm to test probe relationships with age, sex, tissue, and population
 # while also controlling for the other variables
@@ -54,7 +37,7 @@ full_limma <- fitLimma(meth_dat = meth_dat)
 pvals_full <- full_limma %>%
   mutate(across(matches('pval'), list(adj = function(x) p.adjust(x, method = 'BH'))))
 
-# 5 - Correlated positions ====
+# 4 - Correlated positions ====
 
 # Get pvlaues either > 0.05 or < 0.05 (depending on whether we want the Cgs
 # correlated or uncorrelated with the variable)
@@ -86,7 +69,7 @@ cgs_cor_w_age <- pvals_full %>%
   filter(if_any(everything(), ~ . < 0.05)) %>%
   pull(CGid)
 
-# 6 - Select positions ====
+# 5 - Select positions ====
 
 # Reduced Cg positions based on lm (remove all correlated with sex, tissue, and
 # population and keep remaining Cgs correlated with age)
@@ -109,7 +92,7 @@ meth_dat_sex <- meth_dat %>%
   select(c(sampleId:Population, cgs_cor_w_age)) %>%
   select(! any_of(cgs_cor_w_sex))
 
-# 7 - Save ====
+# 6 - Save ====
 
 saveRDS(meth_dat_full, 'output/meth_ewas_all.rds')
 saveRDS(meth_dat_pop, 'output/meth_ewas_pop.rds')
