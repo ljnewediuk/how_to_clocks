@@ -2,11 +2,12 @@
 library(tidyverse)
 library(glmnet)
 
-fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
+fitClock <- function(train_df, test_df, id_var = 'chip.ID.loc',
+                     pt_col = '#000000', pt_cat = NULL) {
   # Get matrix of betas for training data
   train_m <- train_df %>%
     # Make chip positions rownames
-    column_to_rownames('chip.ID.loc') %>%
+    column_to_rownames(id_var) %>%
     # Remove extra cols
     select(starts_with('cg')) %>%
     # Convert to matrix
@@ -15,7 +16,7 @@ fitClock <- function(train_df, test_df, pt_col = '#000000', pt_cat = NULL) {
   # Get matrix of betas for test data
   test_m <- test_df %>%
     # Make chip positions rownames
-    column_to_rownames('chip.ID.loc') %>%
+    column_to_rownames(id_var) %>%
     # Remove extra cols
     select(starts_with('cg')) %>%
     # Convert to matrix
