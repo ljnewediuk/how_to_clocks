@@ -6,11 +6,11 @@ fitLimma <- function(meth_dat, form = c('Spec', 'age', 'sex', 'Population')) {
   
   # Combine samples into design matrix
   design_mat <- meth_dat %>%
-    select(sampleId:Population)
+    select(! starts_with('cg'))
   
   # Betas in rows, samples in columns
   betas <- meth_dat %>%
-    select(! sampleId:Population) %>%
+    select(starts_with('cg')) %>%
     as.matrix() %>%
     t()
 
