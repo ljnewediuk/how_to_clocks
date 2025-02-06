@@ -11,9 +11,9 @@
 .DS_Store
 
 # Large datasets and figures
-input/
-output/
+development/
 figures/
+output/
 
 # Example code in package build process
 *-Ex.R
