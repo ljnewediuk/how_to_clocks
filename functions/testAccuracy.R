@@ -31,7 +31,7 @@ testAccuracy <- function(dat, grp_fact, grps, prop_list, train_overlap,
         filter(! sampleId %in% train$sampleId) %>%
         sampleGrps2(grp_fact, grps, 1, n = n_test, complete_overlap = test_overlap)
       # Fit clock
-      clock <- fitClock(train, test, 'black')
+      clock <- fitClock(train, test, mets_only = T)
       # Output
       r <- data.frame(iteration = it,
                       overlap = as.numeric(prop_list[i]),
