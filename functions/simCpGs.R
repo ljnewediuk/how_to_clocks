@@ -1,5 +1,5 @@
 
-simCpGs <- function(n_obs, n_cgs, ages, err_sd, slp = NULL) {
+simCpGs <- function(n_obs, n_cgs, ages, err_sd, nonlin = F, slp = NULL) {
   
   # Function to scale between 0 and 1
   sc01 <- function(x) {
@@ -20,9 +20,14 @@ simCpGs <- function(n_obs, n_cgs, ages, err_sd, slp = NULL) {
       slp_dir <- sample(x = c(-slp, slp), size = 1)
       # simulate a random slope with mean == the slope
       r_slp <- sample(x = rnorm(n = 1000, mean = slp_dir, sd = 0.25), size = 1)
-      # relationship (with error)
+      # linear relationship (with error)
       y <-  sc01(ages*r_slp) + e %>%
         as.data.frame()
+      # nonlinear relationship (with error)
+      if(nonlin == T) {
+        y <-  sc01(ages^r_slp) + e %>%
+          as.data.frame()
+      }
     } else {
       # no relationship
       y <- runif(n = length(ages), min = 0, max = 30) %>%
@@ -40,9 +45,9 @@ simCpGs <- function(n_obs, n_cgs, ages, err_sd, slp = NULL) {
     if(cg == n_cgs) break
   }
   # Make sure betas are capped at 1
-  meth_array <- meth_array %>%
-    mutate(across(starts_with('cg'), function(x) ifelse(x > 1, 1, x))) %>%
-    mutate(across(starts_with('cg'), function(x) ifelse(x < 0, 0, x)))
+  # meth_array <- meth_array %>%
+  #   mutate(across(starts_with('cg'), function(x) ifelse(x > 1, 1, x))) %>%
+  #   mutate(across(starts_with('cg'), function(x) ifelse(x < 0, 0, x)))
   
   # Return the sites
   return(meth_array)
