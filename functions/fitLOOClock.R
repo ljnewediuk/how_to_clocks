@@ -1,11 +1,31 @@
 
-fitLOOClock <- function(pop_dat) {
+fitLOOClock <- function(pop_dat, fs = FALSE, N = 250) {
   
   # Separate into training and testing sets (sample by pop, tissue, sex, age)
   train_dat <- pop_dat %>%
-    group_by(Population, Spec, sex, age) %>%
-    slice_sample(n = 1) %>%
-    ungroup()
+    sample_n(size = N)
+    # group_by(Population, Spec, sex, age) %>%
+    # slice_sample(n = 1) %>%
+    # ungroup()
+  
+  # Perform feature selection if needed (remove sites related to sex
+  # for training data only)
+  if(isTRUE(fs)) {
+
+    sex_list <- c('M', 'F')
+    for(i in 1:length(sex_list)) {
+      # Fit limma (can't control for population because one population is all male)
+      lim_cgs <- groupLimma(dat = train_dat, variable = 'sex', value = sex_list[i],
+                            control_vars <- c('Spec'), pval = 1e-3)
+      # Get CpG sites correlated with age in all categories
+      if(i == 1) sex_cgs <- lim_cgs
+      if(i > 1) sex_cgs <- sex_cgs[sex_cgs %in% lim_cgs]
+    }
+    # Remove samples with feature selection
+    train_dat <- train_dat %>%
+      select(sampleId:Population, any_of(sex_cgs)) 
+  }
+  
   test_dat <- pop_dat %>%
     filter(! sampleId %in% train_dat$sampleId)
   
@@ -52,6 +72,12 @@ fitLOOClock <- function(pop_dat) {
   test_meth <- test_dat %>%
     select(! sampleId:Population) %>%
     as.matrix()
+  # Remove extra cg sites if feature selection was performed on the fold
+  if(isTRUE(fs)) {
+    test_meth <- test_dat %>%
+      select(any_of(sex_cgs)) %>%
+      as.matrix()
+  }
   # Vectors of training and testing ages
   train_ages <- train_dat %>%
     pull(age)
@@ -65,17 +91,13 @@ fitLOOClock <- function(pop_dat) {
   
   # 3 - Accuracy metrics for clocks ===
   
-  # Sample from LOO predictions the same length as the testing data
-  loo_sample <- loo_preds %>%
-    sample_n(size = nrow(test_dat))
-  
   # Calculate mae and r2 for LOO sample
-  mae_loo <- as.numeric(ie2misc::mae(loo_sample$agePredict, loo_sample$age))
-  rsq_loo <- as.numeric(cor.test(loo_sample$agePredict, loo_sample$age)$estimate)
+  mae_loo <- as.numeric(ie2misc::mae(loo_preds$agePredict, loo_preds$age))
+  rsq_loo <- summary(lm(agePredict ~ age, data = loo_preds))$r.squared
   
   # Calculate mae and r2 for hold-out clock
   mae_ho <- as.numeric(ie2misc::mae(ho_preds$agePredict, ho_preds$age))
-  rsq_ho <- as.numeric(cor.test(ho_preds$agePredict, ho_preds$age)$estimate)
+  rsq_ho <- summary(lm(agePredict ~ age, data = ho_preds))$r.squared
   
   # Make data frame with results
   val_df <- data.frame(Clock = c('HO', 'LOO'),
