@@ -42,7 +42,7 @@ All code was run in R v4.3.1 and runs on macOS Monterey v12.7.3
   * detection_p: detection p-value; > 0.05 is high
   * batch number: Ranges from 1-8
 
-* norm_betas: Data frame with polar bear DNA methylation data
+* norm_betas: Data frame with polar bear DNA methylation data (**NOTE:** this file is > 100 MB and therefore not available on GitHub. It will be made available on Dryad.)
   * sampleId: Unique sample name
   * chip.ID.loc: chip IDs corresponding to name of position
   * id: ID for individual bear (might be multiple sampleIds/bear)
