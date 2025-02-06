@@ -13,6 +13,7 @@
 # Large datasets and figures
 development/
 figures/
+input/norm_betas.rds
 output/
 
 # Example code in package build process
