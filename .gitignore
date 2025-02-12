@@ -15,6 +15,7 @@ development/
 figures/
 input/norm_betas.rds
 output/
+betas/
 
 # Example code in package build process
 *-Ex.R
