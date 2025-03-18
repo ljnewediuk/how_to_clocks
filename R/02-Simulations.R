@@ -479,6 +479,150 @@ plot_grid(age_error_panels, age_error_Xlab, ncol = 1, rel_heights = c(0.9, 0.05)
 ggsave('figures/sim_age_error_bias.tiff', plot = last_plot(), bg = 'white',
        device = 'tiff', dpi = 300, height = 10, width = 22, units = 'cm')
 
+# SCENARIO 4 - Age error and sample size
+
+# Add aging error to the training samples, and compare its influence on clock
+# accuracy versus sample size
+
+# Iterate over different sd of error 
+# Start empty data frame
+error_df <- data.frame()
+
+for(N in seq(from = 50, to = 1000, by = 50)) {
+  
+  cat('sample size = ', N)
+  
+  # 2 - Set up simulation variables ====
+  
+  # Number of observations
+  n_obs = N
+  n_cgs = 500
+  
+  # Make n random ages between min and max
+  age_vec <- runif(n = n_obs, min = 0, max = 30) %>%
+    sort() %>% round()
+  
+  # Simulate CpGs with a linear relationship between age and DNA methylation and 
+  # age.
+  sim_ages <- simCpGs(n_obs = n_obs, n_cgs = n_cgs, 
+                      ages = age_vec, slp = .1, err_sd = 0.5) %>%
+    mutate(age = age_vec, 
+           id = paste0('anim', row_number()),
+           tissue = rep(c('Skin', 'Blood'), length.out = n_obs)) %>%
+    relocate(c(id, age, tissue))
+  
+  # SCENARIO 3 - Age error
+  
+  # Add aging error to the training samples
+  
+  # Training samples randomly selected from all samples
+  train_error <- sim_ages %>%
+    group_by(age) %>%
+    slice_sample(prop = 0.5)
+  
+  # Test samples randomly selected from all samples
+  test_error <- sim_ages %>%
+    filter(! id %in% train_error$id)
+  
+  
+  # Repeat 100 times per level of overlap/standard deviation
+  for(V in seq(from = 0, to = 5, by = 0.2)) {
+    it <- 1
+    cat('standard deviation = ', V)
+    while(it <= 100) {
+      # Add age error
+      test_error_i <- test_error %>%
+        mutate(noise = rnorm(nrow(test_error), mean = 0, sd = V),
+               age = round(age + noise)) %>%
+        select(! noise)
+      # Fit clock
+      error_clock <- fitClock(train_error, test_error_i, id_var = 'id', 
+                              mets_only = T)
+      # Row for df
+      error_row <- data.frame(iteration = it,
+                              N_obs = N, 
+                              sd = V,
+                              mae = error_clock$mae, 
+                              rsq = error_clock$rsq)
+      # Bind rows
+      error_df <- bind_rows(error_df, error_row)
+      # Next iteration
+      it <- it + 1
+    }
+  }
+}
+
+# Save data (takes hours to run)
+saveRDS(error_df, 'output/sim_age_error_sample_size.rds')
+
+# Get mean accuracy and confidence intervals
+error_means <- error_df %>%
+  group_by(N_obs, sd) %>%
+  summarize(mae_mean = mean(mae),
+            rsq_mean = mean(rsq),
+            mae_lower = mean(mae) - (sd(mae)/sqrt(100))*1.96,
+            mae_upper = mean(mae) + (sd(mae)/sqrt(100))*1.96,
+            rsq_lower = mean(rsq) - (sd(rsq)/sqrt(100))*1.96,
+            rsq_upper = mean(rsq) + (sd(rsq)/sqrt(100))*1.96)
+
+# Plot
+mae_err_sample_size_plot <- error_means %>%
+  filter(N_obs %in% c(50, 500, 1000)) %>%
+  ggplot(aes(x = sd, y = mae_mean, size = factor(N_obs))) +
+  geom_ribbon(aes(ymin = mae_lower, ymax = mae_upper), 
+              alpha = 0.5, colour = NA, fill = '#8abbff') +
+  scale_size_manual(values = c(0.75, 1.25, 2.25), name = 'Sample size') +
+  geom_line(linewidth = 0.75, colour = '#3388ff') +
+  geom_point(colour = '#3388ff') + 
+  theme(panel.background = element_rect(fill = 'white', colour = 'black'),
+        panel.grid = element_blank(),
+        plot.margin = unit(c(0.25, 0.25, 0, 1), 'cm'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        legend.text = element_text(size = 15, colour = 'black'),
+        legend.title = element_text(size = 15, colour = 'black')) +
+  ylim(0, 5.5) +
+  labs(x = '', y = 'Median absolute error')
+
+rsq_err_sample_size_plot <- error_means %>%
+  filter(N_obs %in% c(50, 500, 1000)) %>%
+  ggplot(aes(x = sd, y = rsq_mean, size = factor(N_obs))) +
+  geom_ribbon(aes(ymin = rsq_lower, ymax = rsq_upper), 
+              alpha = 0.5, colour = NA, fill = '#ffbe99') +
+  scale_size_manual(values = c(0.75, 1.25, 2.25), name = 'Sample size') +
+  geom_line(linewidth = 0.75, colour = '#ff5e00') +
+  geom_point(colour = '#ff5e00') + 
+  theme(panel.background = element_rect(fill = 'white', colour = 'black'),
+        panel.grid = element_blank(),
+        plot.margin = unit(c(0.25, 0.25, 0, 1), 'cm'),
+        axis.title.y = element_text(size = 15, colour = 'black', vjust = 3),
+        axis.title.x = element_text(size = 15, colour = 'black', vjust = -3),
+        axis.text = element_text(size = 15, colour = 'black'),
+        legend.text = element_text(size = 15, colour = 'black'),
+        legend.title = element_text(size = 15, colour = 'black')) +
+  ylim(0, 1) +
+  labs(x = '', y = 'R-squared')
+
+# Make x axis label
+age_error_Xlab <- ggplot() + 
+  geom_text(aes(x = 0, y = 0), 
+            label = 'Standard deviation of age error distribution', 
+            size = 5.5) + 
+  theme_void()
+
+# Make panel plot
+age_error_panels <- plot_grid(rsq_err_sample_size_plot, mae_err_sample_size_plot, 
+                              ncol = 2, labels = c('A', 'B'), align = 'h', 
+                              label_size = 20)
+
+#  Plot with x-axis label
+plot_grid(age_error_panels, age_error_Xlab, ncol = 1, rel_heights = c(0.9, 0.05))
+
+# Save figure
+ggsave('figures/sim_age_error_sample_size.tiff', plot = last_plot(), bg = 'white',
+       device = 'tiff', dpi = 300, height = 10, width = 22, units = 'cm')
+
 # 4 - Feature selection scenarios ====
 
 # Run feature selection on variables -- age and category -- then fit clock to
