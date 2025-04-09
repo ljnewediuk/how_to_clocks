@@ -16,6 +16,7 @@ figures/
 input/norm_betas.rds
 output/
 betas/
+dryad/
 
 # Example code in package build process
 *-Ex.R
