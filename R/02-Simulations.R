@@ -188,8 +188,12 @@ bias_panels <- plot_grid(rsq_class_bias_plot, mae_class_bias_plot,
 plot_grid(bias_panels, bias_Xlab, ncol = 1, rel_heights = c(0.9, 0.05))
 
 # Save figure
+# As tiff
 ggsave('figures/sim_class_bias.tiff', plot = last_plot(), bg = 'white',
        device = 'tiff', dpi = 300, height = 10, width = 22, units = 'cm')
+# As svg
+ggsave('figures/sim_class_bias.svg', plot = last_plot(), bg = 'white',
+       device = 'svg', dpi = 300, height = 10, width = 22, units = 'cm')
 
 # SCENARIO 2 - Age bias
 
@@ -368,8 +372,12 @@ plot_grid(rsq_age_b_plot, mae_age_b_plot,
           label_size = 20)
 
 # Save figure
+# As tiff
 ggsave('figures/sim_age_bias.tiff', plot = last_plot(), 
        device = 'tiff', dpi = 300, height = 12, width = 22, units = 'cm')
+# As svg
+ggsave('figures/sim_age_bias.svg', plot = last_plot(), 
+       device = 'svg', dpi = 300, height = 12, width = 22, units = 'cm')
 
 # SCENARIO 3 - Age error
 
@@ -476,84 +484,96 @@ age_error_panels <- plot_grid(rsq_age_error_plot, mae_age_error_plot,
 plot_grid(age_error_panels, age_error_Xlab, ncol = 1, rel_heights = c(0.9, 0.05))
 
 # Save figure
+# tiff
 ggsave('figures/sim_age_error_bias.tiff', plot = last_plot(), bg = 'white',
        device = 'tiff', dpi = 300, height = 10, width = 22, units = 'cm')
+# svg
+ggsave('figures/sim_age_error_bias.svg', plot = last_plot(), bg = 'white',
+       device = 'svg', dpi = 300, height = 10, width = 22, units = 'cm')
 
 # SCENARIO 4 - Age error and sample size
 
 # Add aging error to the training samples, and compare its influence on clock
 # accuracy versus sample size
 
-# Iterate over different sd of error 
-# Start empty data frame
-error_df <- data.frame()
-
-for(N in seq(from = 50, to = 1000, by = 50)) {
-  
-  cat('sample size = ', N)
-  
-  # 2 - Set up simulation variables ====
-  
-  # Number of observations
-  n_obs = N
-  n_cgs = 500
-  
-  # Make n random ages between min and max
-  age_vec <- runif(n = n_obs, min = 0, max = 30) %>%
-    sort() %>% round()
-  
-  # Simulate CpGs with a linear relationship between age and DNA methylation and 
-  # age.
-  sim_ages <- simCpGs(n_obs = n_obs, n_cgs = n_cgs, 
-                      ages = age_vec, slp = .1, err_sd = 0.5) %>%
-    mutate(age = age_vec, 
-           id = paste0('anim', row_number()),
-           tissue = rep(c('Skin', 'Blood'), length.out = n_obs)) %>%
-    relocate(c(id, age, tissue))
-  
-  # SCENARIO 3 - Age error
-  
-  # Add aging error to the training samples
-  
-  # Training samples randomly selected from all samples
-  train_error <- sim_ages %>%
-    group_by(age) %>%
-    slice_sample(prop = 0.5)
-  
-  # Test samples randomly selected from all samples
-  test_error <- sim_ages %>%
-    filter(! id %in% train_error$id)
+# Load file if it already exists
+if(file.exists('output/sim_age_error_sample_size.rds')) {
+  error_df <- readRDS('output/sim_age_error_sample_size.rds')
+} else {
   
   
-  # Repeat 100 times per level of overlap/standard deviation
-  for(V in seq(from = 0, to = 5, by = 0.2)) {
-    it <- 1
-    cat('standard deviation = ', V)
-    while(it <= 100) {
-      # Add age error
-      test_error_i <- test_error %>%
-        mutate(noise = rnorm(nrow(test_error), mean = 0, sd = V),
-               age = round(age + noise)) %>%
-        select(! noise)
-      # Fit clock
-      error_clock <- fitClock(train_error, test_error_i, id_var = 'id', 
-                              mets_only = T)
-      # Row for df
-      error_row <- data.frame(iteration = it,
-                              N_obs = N, 
-                              sd = V,
-                              mae = error_clock$mae, 
-                              rsq = error_clock$rsq)
-      # Bind rows
-      error_df <- bind_rows(error_df, error_row)
-      # Next iteration
-      it <- it + 1
+  # Iterate over different sd of error 
+  # Start empty data frame
+  error_df <- data.frame()
+  
+  for(N in seq(from = 50, to = 1000, by = 50)) {
+    
+    cat('sample size = ', N)
+    
+    # 2 - Set up simulation variables ====
+    
+    # Number of observations
+    n_obs = N
+    n_cgs = 500
+    
+    # Make n random ages between min and max
+    age_vec <- runif(n = n_obs, min = 0, max = 30) %>%
+      sort() %>% round()
+    
+    # Simulate CpGs with a linear relationship between age and DNA methylation and 
+    # age.
+    sim_ages <- simCpGs(n_obs = n_obs, n_cgs = n_cgs, 
+                        ages = age_vec, slp = .1, err_sd = 0.5) %>%
+      mutate(age = age_vec, 
+             id = paste0('anim', row_number()),
+             tissue = rep(c('Skin', 'Blood'), length.out = n_obs)) %>%
+      relocate(c(id, age, tissue))
+    
+    # SCENARIO 3 - Age error
+    
+    # Add aging error to the training samples
+    
+    # Training samples randomly selected from all samples
+    train_error <- sim_ages %>%
+      group_by(age) %>%
+      slice_sample(prop = 0.5)
+    
+    # Test samples randomly selected from all samples
+    test_error <- sim_ages %>%
+      filter(! id %in% train_error$id)
+    
+    
+    # Repeat 100 times per level of overlap/standard deviation
+    for(V in seq(from = 0, to = 5, by = 0.2)) {
+      it <- 1
+      cat('standard deviation = ', V)
+      while(it <= 100) {
+        # Add age error
+        test_error_i <- test_error %>%
+          mutate(noise = rnorm(nrow(test_error), mean = 0, sd = V),
+                 age = round(age + noise)) %>%
+          select(! noise)
+        # Fit clock
+        error_clock <- fitClock(train_error, test_error_i, id_var = 'id', 
+                                mets_only = T)
+        # Row for df
+        error_row <- data.frame(iteration = it,
+                                N_obs = N, 
+                                sd = V,
+                                mae = error_clock$mae, 
+                                rsq = error_clock$rsq)
+        # Bind rows
+        error_df <- bind_rows(error_df, error_row)
+        # Next iteration
+        it <- it + 1
+      }
     }
   }
+  
+  # Save data (takes hours to run)
+  saveRDS(error_df, 'output/sim_age_error_sample_size.rds')
+  
 }
-
-# Save data (takes hours to run)
-saveRDS(error_df, 'output/sim_age_error_sample_size.rds')
 
 # Get mean accuracy and confidence intervals
 error_means <- error_df %>%
@@ -620,8 +640,12 @@ age_error_panels <- plot_grid(rsq_err_sample_size_plot, mae_err_sample_size_plot
 plot_grid(age_error_panels, age_error_Xlab, ncol = 1, rel_heights = c(0.9, 0.05))
 
 # Save figure
+# tiff
 ggsave('figures/sim_age_error_sample_size.tiff', plot = last_plot(), bg = 'white',
        device = 'tiff', dpi = 300, height = 10, width = 22, units = 'cm')
+# svg
+ggsave('figures/sim_age_error_sample_size.svg', plot = last_plot(), bg = 'white',
+       device = 'svg', dpi = 300, height = 10, width = 22, units = 'cm')
 
 # 4 - Feature selection scenarios ====
 
@@ -741,6 +765,10 @@ fs_panels <- plot_grid(fs_mae_plot, fs_rsq_plot,
 plot_grid(fs_panels, fs_Xlab, ncol = 1, rel_heights = c(0.9, 0.05))
 
 # Save figure
+# tiff
 ggsave('figures/sim_feature_selection.tiff', plot = last_plot(), bg = 'white',
        device = 'tiff', dpi = 300, height = 15, width = 17, units = 'cm')
+# svg
+ggsave('figures/sim_feature_selection.svg', plot = last_plot(), bg = 'white',
+       device = 'svg', dpi = 300, height = 15, width = 17, units = 'cm')
 

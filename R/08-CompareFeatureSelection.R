@@ -79,7 +79,9 @@ plot_grid(rsq_plt, mae_plt,
           ncol = 2, labels = c('A', 'B'), align = 'v', label_size = 20)
 
 # 3 - Save figure ====
-
+# tiff
 ggsave('figures/pb_data_feature_selection.tiff', plot = last_plot(), 
        device = 'tiff', dpi = 300, height = 12, width = 27, units = 'cm')
-
+# svg
+ggsave('figures/pb_data_feature_selection.svg', plot = last_plot(), 
+       device = 'svg', dpi = 300, height = 12, width = 27, units = 'cm')

@@ -8,6 +8,7 @@
 # Load libraries
 library(tidyverse)
 library(glmnet)
+library(cowplot)
 
 # Source functions
 source('functions/fitLOOClock.R')
@@ -159,6 +160,9 @@ plot_grid(rsq_plt, mae_plt,
           ncol = 2, labels = c('A', 'B'), align = 'v', label_size = 20)
 
 # 5 - Save figure ====
-
+# tiff
 ggsave('figures/pb_validation.tiff', plot = last_plot(), 
        device = 'tiff', dpi = 300, height = 10, width = 20, units = 'cm')
+# svg
+ggsave('figures/pb_validation.svg', plot = last_plot(), 
+       device = 'svg', dpi = 300, height = 10, width = 20, units = 'cm')

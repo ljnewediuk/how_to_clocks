@@ -174,7 +174,11 @@ for(i in var_list) {
 plot_grid(plotlist = plt_list, ncol = 2, labels = LETTERS[1:4], label_size = 20)
 
 # Save
+# tiff
 ggsave('pb_clock_biases.tiff', plot = last_plot(), 
        device = 'tiff', path = 'figures/', dpi = 300, height = 22, width = 45, units = 'cm', bg = 'white')
+# svg
+ggsave('pb_clock_biases.svg', plot = last_plot(), 
+       device = 'svg', path = 'figures/', dpi = 300, height = 22, width = 45, units = 'cm', bg = 'white')
 
 

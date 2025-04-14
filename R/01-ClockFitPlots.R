@@ -167,6 +167,12 @@ py <- plot_grid(Ylab, p4, rel_widths = c(0.1, 1))
 plot_grid(py, Xlab, rel_heights = c(1, 0.1), ncol = 1)
 
 # Save plot
+# As tiff
 ggsave('clock_intro_fig.tiff', plot = last_plot(), path = 'figures/', 
        device = 'tiff', dpi = 300, height = 12, width = 12, units = 'cm', 
+       bg = 'white')
+
+# As svg
+ggsave('clock_intro_fig.svg', plot = last_plot(), path = 'figures/', 
+       device = 'svg', dpi = 300, height = 18, width = 18, units = 'cm', 
        bg = 'white')
