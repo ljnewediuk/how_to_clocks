@@ -727,7 +727,7 @@ fs_mae_plot <- fs_means %>%
         strip.background = element_rect(fill = 'white', colour = NA),
         strip.text = element_text(size = 15, colour = 'black'),
         legend.position = 'none') +
-  ylim(0,3) + ylab('Median absolute error')
+  ylim(0,5) + ylab('Median absolute error')
 
 # Plot figure - R-squared
 fs_rsq_plot <- fs_means %>% 
